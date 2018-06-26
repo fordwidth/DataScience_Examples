@@ -1,0 +1,362 @@
+---
+title: "The Lack of Community Water Fluoridation in the Berkshires Results in Decreased Public Health "
+author: "Trent Fowler trent.fowler@biology.ventures"
+date: "March 9, 2018"
+output: html_document
+always_allow_html: yes
+---
+
+# Summary 
+
+Though water fluoridation is generally believed to benefit public health some counties in Massachusetts do not provide fluoridated water. To determine if fluoridation is indeed associated with increased public health, we evaluated reimbursement claims for caries-related procedures reported to the Massachusetts Medicaid program. The number of claims per residents in each county were analyzed over a six year period (2010 - 2015) with regard to county "Fluoride Level", or % of water treatment centers providing fluoride. Counties with little to no delivery of fluoridated water do have significantly higher rates of caries-related procedures than counties with even low (20-30%) fluoride delivery. This result agrees with many other reports showing a protective effect of communal water fluoridation on public health and argues that including communal water fluoridation in Berkshire County can benefit communal oral health and public health costs. 
+
+## Interest in water fluoridation in Berksihre County Massachusetts
+
+The American Center for Disease Control declares public water fluoridation to be one of the ten best public health achievements in the 20th century, https://www.cdc.gov/about/history/tengpha.htm . To my knowledge, adding fluoride to public tap water is commonly used to increase oral health of the community and any controversy of adding flouride to public water ended a long time ago. 
+
+However, upon moving to Berkshire County, Massachusetts, USA I was surprised to hear that flouride is not added to public drinking water. After living here for a year and a half my 7 year old son developed two cavities. Certainly other factors are involved in his situation but I wanted to determine how much fluoridated water is distributed in the state and if it does indeed impact public oral health. 
+
+## Background
+
+In the 1930s, scientists reported that children who drank water with naturally high levels of fluoride had less tooth decay (Dean HT et. al.). This and similar reports led to Community Water Fluoridation (CWF) as a strategy for controlling dental caries. CWF provides fluoride that can incorporate into developing and damaged teeth and help with their re-calcification and repair (Rošin-Grget et al). Definitive reports in the scientific literature showing a direct benefit of fluoridated water on oral health appeared with the work of HT Dean and FA Arnold published in the 40s and 50s. 
+
+More recently, investigators have turned to readily available databases to examine communal health and CWF. A recent study reported the frequency of dental procedures associated with caries relevant to CWFin New York state (Kumar et. al.). They calculated the mean number of claims per recipient for children in each county separately for the treatment of caries in 2006. They found that compared with the predominantly fluoridated counties, the mean number of dental; restorative, endodontic, and extraction, procedures per recipient were significantly higher in less fluoridated counties while claims for non-caries related services were not. Such a report illustrates that public health data can effectively be used to determine benefits of CWF to the community. 
+
+## Project goals
+
+Report the availability of CWF at the county level along with characteristics of each county, such as income and population density, and determine if a correlation can be made between such characteristics and rates of CWF. CWF rates at the county level with also be compared with caries related dental procedures from the Massachusetts Medicaid program spanning a six year period, 2011 to 2015. Certainly, if a significant relationship between fluoridation and increased oral health is found, it is hoped that this report could be utilized to argue for the value of providing CWF here in Berkshire County.  
+
+## Delivery of fluoridated water across the US 
+
+I assumed that fluoridated water was commonly provided in Massachusetts but was obviously wrong. So, how prevalent is CWF across the US?  
+
+Data source: https://www.cdc.gov/fluoridation/statistics/fsgrowth.htm
+```{r, echo = FALSE, message = FALSE}
+USFW <- read.csv("/home/trent/Documents/Bioinformatics/DataScience/DevelopingDataProducts/USFluoridatedWaterStats.csv")
+FWplot <- plot(USFW$Year,  USFW$Percentage.of.US.population.receiving.flouridated.water, 
+main = "Percentage of Population Receiving Fluoridated Water", xlab = "Year", ylab = "% of US Population", col = "red", pch = 19, ylim = c(0, 100))
+
+```
+
+Delivery of fluoride in public water is not as prevalent as I thought but still pretty high. 
+
+## How does fluoridation look from state to state? 
+State fluoridation stats from 2014
+https://www.cdc.gov/fluoridation/statistics/2014stats.htm
+
+Here, we are looking at the number of water districts in each state that deliver fluoride above a reported protective threshold, 0.7 parts per million (ppm). One factor that might easily explain differences in fluoride delivery was cost. At the state level, average income data are readily available and may provide a factor associated with fluoride delivery. If an area has more revenue, via income, would it be more likely to provide fluoridated water? 
+
+State income stats from 2014 
+https://www2.census.gov/programs-surveys/demo/tables/income-poverty/glassman-acs.xls
+
+
+```{r StateStats, echo = FALSE, message = FALSE, warning= FALSE}
+library(plotly)
+# read in state fluoridation data
+StateFW <- read.csv("/home/trent/Documents/Bioinformatics/DataScience/DevelopingDataProducts/StateFluoridationStats.csv")
+
+# read in state income stats...
+# data are hard to extract in an automated manner and were copied/pasted to a file.  
+# From 'Median Household Income' --2014 --Est
+StateInc <- read.csv("/home/trent/Documents/Bioinformatics/DataScience/DevelopingDataProducts/MedianHouseholdIncome2014.csv", stringsAsFactors = FALSE)
+StateInc$MedianIncome <- as.numeric(gsub(",", "", StateInc$MedianIncome))
+plot_ly(y = ~StateFW$Percentage, x = ~StateInc$MedianIncome, 
+        type = "scatter",
+        text = StateInc$State, color = "red") %>%
+    layout(title = "US State Fluoridation and Income",
+           xaxis = list(title = "Median Household Income"),
+           yaxis = list(title = "Percentage Fluoridation"))
+```
+Scroll across data points for identity of state. Ex. Massachusetts is at 70% with nearly 70K median income. 
+
+In 2014, Massachusetts water fluoridation is at 70% which is the 31st highest rate of water fluoridation. So more than half of US states have over 70% fluoridated water coverage. Notice the low income/high fluoridation cluster and the surprising outlier New Jersey with high income and low fluoridation (72K, 15%). 
+
+These results lead to the conclusion that at the state level delivery of fluoridated water varies greatly and with little correlation between available economic resources and fluoridation. 
+
+## How does fluoridated water delivery look across the state of Massachusetts? 
+Fluoridation levels here are reported as the percentage of water treatment plants in a county that provides the recommended dosage of fluoride in public drking water. 
+
+Data from https://www.healthdata.gov/dataset/water-fluoridation-reporting-system-public-water-systems shows how many water districts in each county provides fluoridated water in the year 2017. Data: https://chronicdata.cdc.gov/api/views/6z7r-nydk/rows.csv?accessType=DOWNLOAD 
+
+
+```{r, echo = FALSE, message = FALSE}
+# Data for 2017 across US 
+# https://www.healthdata.gov/dataset/water-fluoridation-reporting-system-public-water-systems 
+# https://chronicdata.cdc.gov/api/views/6z7r-nydk/rows.csv?accessType=DOWNLOAD
+USfluCov <- read.csv("/home/trent/Documents/BiologyVentures/USCounties/USCountyFluoridation.csv")
+Mass <- USfluCov[USfluCov$LocationDesc == "Massachusetts",]
+
+# Get population served by water system 
+Mass <- Mass[, c(2,7,6,19,9,15,13)]; names(Mass) <- c("State", "County", "WaterSystem", "Conc",
+                                               "FluorStatus", "Population", "DonorSys")
+
+# below is the source for the original document used to make the graph in "Effect of Fluoride Delivery on Dental Procedures.Rmd"     https://nccd.cdc.gov/DOH_MWF/Default/CountyList.aspx
+# call up the below file and match on Water System to see if "Fluoridated" matches with this newer file
+MFW <- read.csv("/home/trent/Documents/Bioinformatics/DataScience/DevelopingDataProducts/MassachusettsFlourideStats.csv")
+
+library(dplyr)
+names(MFW) <- c("WaterSystem", "Fluoridated", "PWSID", "County")
+MFW$WaterSystem <- as.character(MFW$WaterSystem) 
+MFW <- arrange(MFW, WaterSystem)
+Mass$WaterSystem <- as.character(Mass$WaterSystem)
+Mass <- cbind(Mass, MFW); Mass <- Mass[, c(1,2,3,4,5,6,9)]
+
+# Fluoride status source
+# https://nccd.cdc.gov/DOH_MWF/Reports/FlStatus_Rpt.aspx # link broken Dec 4th 2017
+
+Mass$County <- as.character(Mass$County)
+countylist <- unique(Mass$County); countylist <- sort(countylist)
+MassPop <- Mass[Mass$County == countylist[1],]
+countysum <- sum(MassPop$Population)
+MassPop <- mutate(MassPop, PercentPop = Population/countysum)
+MassPop$Coverage <- sum(MassPop[MassPop$Fluoridated == "Yes",8])*100
+
+for(i in 2:14) {
+    specificcounty <- data.frame()
+    specificcounty <- Mass[Mass$County == countylist[i],]
+    countysum <- sum(specificcounty$Population)
+    specificcounty <- mutate(specificcounty, PercentPop = Population/countysum)
+    # need to make list of county and assoicated sum of PercentPop $ FLuoridated ==  Yes
+    specificcounty$Coverage <- sum(specificcounty[specificcounty$Fluoridated == "Yes",8])*100
+    # rbind is not collecting for the different counties but ending at Worcester 
+    MassPop <- rbind(MassPop, specificcounty)
+}
+rm(i); rm(specificcounty); rm(countysum)
+MassPop <- MassPop[,c(2,3,6,7,8,9)]
+MassPop$level <- cut(MassPop$Coverage, 4, include.lowest = TRUE,
+                     labels = c("Very Low", "Low", "Med", "High"))
+
+# Sum up water district data to the county level. This will match the county level dental data. 
+CoverageReport <- as.data.frame(countylist)  
+CoverageReport$Coverage <- unique(MassPop$Coverage) 
+CoverageReport$Level <- cut(CoverageReport$Coverage, 4, include.lowest = TRUE,
+                            labels = c("Very Low: <5%", "Low: 20-30%", "Mid: 40-60%", "High: 70-80%"))
+names(CoverageReport) <- c("County", "Coverage", "Level")
+CoverageReport <- CoverageReport[order(CoverageReport$County),] 
+
+``` 
+
+Massachusetts counties report variable levels of water districts with CWF. Berkshire County is listed with very little coverage, 0.6%. For 70% of the Massachusetts population to get fluoridated water I am assuming that the counties with higher fluoride are heavily populated. Let's see if this is a valid assumption. 
+
+### Visualize county population and fluoridation. 
+Population data from 2010 Census
+```{r, echo = FALSE, message = FALSE}
+library(leaflet)
+MassCoData <- read.csv("/home/trent/Documents/Bioinformatics/DataScience/DevelopingDataProducts/MassCountyData.csv", comment.char = "#") 
+
+CoverageReport <- cbind(CoverageReport, MassCoData[,c(2:4)])
+# assuming coordinates are for center of county 
+CoverageReport$Latitude <- as.numeric(CoverageReport$Latitude)
+CoverageReport$Longitude <- as.numeric(CoverageReport$Longitude)
+MassCoMapped <- data.frame(name = countylist,
+                           pop = CoverageReport$Population,
+                           lat = c(42.3118, 41.6991, 42.0167, 41.4040, 42.7051, 42.5306, 
+                                   42.1171, 42.3471,
+                                   42.4672, 41.2835, 42.1767, 41.9120, 42.3523, 42.4097),
+                           lng = c(-73.1822, -70.3209, -71.2161, -70.6693, -70.9071, -72.6151, 
+                                   -72.664, -72.664, -71.2874, -70.0995, -71.1449, -70.7168, 
+                                   -71.0504, -71.8571),
+                           type = CoverageReport$Level)
+
+pal <- colorFactor(palette = c("red", "orange", "purple", "blue"), domain = MassCoMapped$type)
+
+MassCoMapped %>% leaflet() %>% addTiles() %>%
+    addCircles(weight = 1, radius = sqrt(MassCoMapped$pop) * 30, color = ~pal(type)) %>%
+    addLegend(labels = c("Very Low: <5%", "Low: 20-30%", "Mid: 40-60%", "High: 70-80%"), 
+              colors = c("red", "orange", "purple", "blue"))
+```
+
+### Fluoridated water delivery at the county level correlates with population density. 
+
+Berkshire county can be seen as low (red) at the far west portion of Massachusetts. Note that the size of the circle represents the relative population size. Suffolk County, containing Boston, and the surrounding counties are the most populated and all have higher fluoridation delivery. Of various county characteristics incuding population density, income, housing prices, and poverty levels, only population density was found to significantly correlate with fluoridation levels at the county level, analysis not shown. 
+
+## Association of fluoridated water and oral health at the county level. 
+Looking at communal oral health is a complex affair involving many factors. To take a basic look, different dental procedure codes, received by request from the Commonwealth of Massachusetts Executive Office of Health and Human Services, representing restorative, endontic, and periodontic dental procedures, will provide a reasonable overview of oral health in the community. 
+
+```{r FluoridatedWaterStats, echo = FALSE, message = FALSE}
+
+PWFW <- read.csv("/home/trent/Documents/BiologyVentures/Dental/Dental_Code_Test.csv", na.strings = "*")
+# get rid of x in name...
+names(PWFW) <- c("County", "Town", "Description", "2010", "2011", "2013", "2012", "2014", "2015", "Age")
+# prep for later matching with population..
+PWFW$County <- as.character(PWFW$County); PWFW$Town <- as.character(PWFW$Town)
+
+# gather years for use as a variable...
+library(tidyr)
+PWFW <- gather(PWFW, Year, Count, -c(County, Town, Description, Age))
+# isolate numeric code 
+PWFW$Description <- as.character(PWFW$Description)
+PWFW$Code <- sapply(strsplit(PWFW$Description," "), `[`, 1)
+# drop D from Code and class as integer
+PWFW$Code <- sapply(strsplit(PWFW$Code,"D"), `[`, 2)
+PWFW$Code <- as.integer(PWFW$Code)
+# Need to get rid of the "total" groups as they have NA for codes
+# dim(PWFW)  [1] 45156     7
+PWFW <- PWFW[complete.cases(PWFW), ] # dim(PWFW) [1] 19876     7
+
+# use integer codes to group into Restorative (2000-2999), Endodontics (3000-3999), Periodontics (4000-4999)
+library(dplyr); PWFW <- arrange(PWFW, Code) 
+# Determine where the three groups are by visual inspection. 
+# 2000s end at 16134, 3000s at 15372
+PWFW$CodeGroup <- "restorative"
+PWFW[c(16135:18692),8] <- "endodontics"
+PWFW[c(18693:19876),8] <- "periodontics"
+
+# Divide codes by county population 
+PWFW <- arrange(PWFW, County) 
+temp <- data.frame()
+PWFWbyPop <- PWFW[PWFW$County == "Barnstable",]
+PWFWbyPop <- mutate(PWFWbyPop, CountPop = Count / CoverageReport[1,4])
+PWFWbyPop$fluoridation <- CoverageReport[1, 2]
+
+Yearlist <- unique(PWFWbyPop$Year) 
+for(i in 2:14){
+    temp <- PWFW[PWFW$County == countylist[i],]
+    temp <- mutate(temp, CountPop = Count / CoverageReport[i, 4])
+    temp$fluoridation <- CoverageReport[i, 2]
+    PWFWbyPop <- rbind(PWFWbyPop, temp); rm(temp); rm(i)
+}
+
+```
+
+
+
+```{r, echo = FALSE, message = FALSE}
+lowFluor <- PWFWbyPop[PWFWbyPop$fluoridation < 30,]
+midFluor <- PWFWbyPop[PWFWbyPop$fluoridation > 40,] 
+veryLowFluor <- lowFluor[lowFluor$fluoridation < 5,9] * 10000
+lowFluor <- lowFluor[lowFluor$fluoridation > 5,9] * 10000
+highFluor <- midFluor[midFluor$fluoridation > 70,9] * 10000
+midFluor <- midFluor[midFluor$fluoridation < 70,9] * 10000
+
+# Normalize each by number of counties; verlow = 4, low = 3, mid = 4, high = 3. 
+boxplot(veryLowFluor,lowFluor, midFluor, highFluor, 
+        varwidth = TRUE, notch = TRUE, outline = FALSE, col = c("red","orange", "purple", "blue"),
+        ylim = c(-0.00002, 15), xlab = "Fluoridation Level", ylab = "Dental Procedures/Population",
+        main = "Procedures based on county fluoridation level",
+        names = c("Very Low", "Low", "Med", "High"))
+box()
+```
+
+The box plots above contain the reported procedures per county population which were summed in each fluoridation level group and then divided by the number of counties in each group. Note that the standard error for "Very Low" fluoridation is quite high; the y axis was decreased to provide better visual separation between groups. 
+
+The graph looks convincing but the high standard error of the "Very Low" group raises doubts about how significant there results are. How do things look statistically?
+
+```{r, echo = FALSE, message = FALSE}
+pp <- wilcox.test(veryLowFluor, lowFluor, paired = FALSE) 
+qq <- wilcox.test(lowFluor, midFluor, paired = FALSE)
+rr <- wilcox.test(midFluor, highFluor, paired = FALSE)
+pickle <- as.data.frame(c(pp$p.value,qq$p.value,rr$p.value))
+names(pickle) <- c("Wilcox.test p-value")
+row.names(pickle) <- c("veryLow to Low", "Low to Mid", "Mid to High")
+pickle
+```
+
+The p-value is a measurement of the signifcance of the difference between two data sets. As a p-value decreases the significance of the difference between the two increases. Each category is very significant; verylow, low, mid, and high are all below a p.vlaue generally held as significant (p < 5e-2, or 0.05)
+
+### Comparison of reported dental codes common to all counties
+A trend was observed showing that counties with higher population reported higher numbers of different dental codes. Another more direct view of the effect of CWF on reported dental codes would be to compare the dental codes common to all counties. 
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+countylist <- unique(PWFWbyPop$County)
+numcodes <- c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+for(i in 1:length(countylist)){
+    numcodes[i] <- length(unique(PWFWbyPop[PWFWbyPop$County == countylist[i],7]))
+}
+# countylist[which.min(numcodes)] # Dukes = countylist[4]
+# check to see if all these codes are reported for each county
+answer <- vector(); mincodes <- unique(PWFWbyPop[PWFWbyPop$County == "Dukes",7])
+for(i in 1:length(countylist)){
+    temp <- unique(PWFWbyPop[PWFWbyPop$County == countylist[i],7]) 
+    check <- sum(mincodes == unique(PWFWbyPop[PWFWbyPop$County == countylist[i],7]))
+    answer[i] <- check
+}
+# answer [1]  3  3  3 14  3  3  3  3  3  9  3  3  3  3
+# Ok which 3 are these?
+# which(mincodes == unique(PWFWbyPop[PWFWbyPop$County == countylist[1],7])) # [1] 1 2 3
+# mincodes[c(1,2,3)] # [1] 2140 2150 2160
+
+# gather all data corresponding to PWFWbyPop$Code == c(2140, 2150, 2160)
+commonCode <- PWFWbyPop[PWFWbyPop$Code == c(2140, 2150, 2160),]
+a1 <- commonCode[commonCode$County == countylist[1],9]
+a2 <- commonCode[commonCode$County == countylist[2],9]
+a3 <- commonCode[commonCode$County == countylist[3],9]
+a4 <- commonCode[commonCode$County == countylist[4],9]
+a5 <- commonCode[commonCode$County == countylist[5],9]
+a6 <- commonCode[commonCode$County == countylist[6],9]
+a7 <- commonCode[commonCode$County == countylist[7],9]
+a8 <- commonCode[commonCode$County == countylist[8],9]
+a9 <- commonCode[commonCode$County == countylist[9],9]
+a10 <- commonCode[commonCode$County == countylist[10],9]
+a11 <- commonCode[commonCode$County == countylist[11],9]
+a12 <- commonCode[commonCode$County == countylist[12],9]
+a13 <- commonCode[commonCode$County == countylist[13],9]
+a14 <- commonCode[commonCode$County == countylist[14],9]
+
+colors <- c("red", "red", "purple", "purple", "blue", "red", "orange", "purple", "blue", "red", 
+            "purple", "orange", "blue", "orange")
+
+boxplot(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, 
+        varwidth = TRUE, notch = TRUE, outline = FALSE, col = colors, ylab = "Procedures per population")
+box()
+legend("topright", legend = c("Very Low", "Low", "Mid", "High"),
+       col = c("red", "orange", "purple", "blue"), lty = 1:4, lwd = 3)
+```
+
+Listed in order; 
+Barnstable, Berksire, Bristol, Dukes, Essex, Franklin, Hampden, 
+Hampshire, Middlesex, Nantucket, Norfolk, Plymouth, Suffolk, Worcester
+
+
+Before, when looking at the categories of fluoride delivery; Very Low, Low, Mid, and High, there was a clear trend of increased CWF resulting in decreased dental procedures. However, while this trend is generally seen when data from individual counties is examined the results are not as visually convincing as with the fluoride categories. 
+
+### Verify trend of CWF decreasing dental procedures at the county level
+With the relatively small county level data set of 14 counties, there is bound to be variance in this analysis. One objective measure of whether there is indeed a significant relationship between CWF and dental procedure reports is to plot out the % of CWF in each county against the number of dental procedure reports and see if a line can be drawn between the data that fits to a statistically significant degree. Here, we will use the procedure codes common to all counties and the % of water districts reporting CWF.  
+```{r, echo = FALSE, message = FALSE}
+# need to sum countpop for each county 
+
+countylist <- unique(PWFWbyPop$County)
+
+getMean <- as.data.frame(countylist); testMean <- c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+for(i in 1:length(countylist)){
+    temp <- commonCode[commonCode$County == countylist[i],]
+    testMean[i] <- mean(temp$CountPop)
+}
+rm(i); rm(temp)
+getMean <- cbind(getMean, testMean); getMean$Coverage <- CoverageReport$Coverage
+rm(testMean)
+
+meanLine <- lm(getMean$testMean ~ getMean$Coverage) 
+MAplot <- plot(getMean$Coverage, getMean$testMean, 
+main = "Community Water Fluoridation vs Dental Codes", xlab = "% Fluoride Delivery", ylab = "Dental Procedures", col = "red", pch = 19)
+abline(lm(getMean$testMean ~ getMean$Coverage), col = "black", lwd = 4)
+```
+
+A relationship was found to be statistically significant; p-value < 0.05. While certainly other factors are involved in an increase in dental procedures for a specific county, the level of CWF was found to be a significant factor. Looking at specific groups of dental procedures, either Restorative, Endodontics, or Periodonitcs, did not change this relationship nor did looking at age, under or over 21 years of age, analysis not shown.
+
+
+### CONCLUSIONS:
+### Fluoridation of public water (CWF) increases dental health
+While this study is a relatively cursory look at the issue, the strong conclusions reached on a small data set, along with other published data, shows that increasing fluoridation of water (CWF) here in Berkshire county is very likely to decrease the number of caries realted dental procedures and increase public dental health. 
+
+### Decreased public health costs outweigh cost of CWF
+One arguement against increasing CWF in the cash strapped Berkshires would be cost. However, a decrease in health related costs appears to substantially outweighth costs of fluoridation. The Center for Disease Control and Prevention estimates that for every dollar spent on CWF, 38 is saved in treatment costs (Griffin et, al.). Additionally, a recent study showed that in the state of Colorado fluoridation was associated with annual savings of 148.9 million in 2003, or a mean of $61 per person (O'Connell et al.). 
+
+### Response to concerns about potential harmful effects of CWF
+Letter critical of CWF; https://www.hsph.harvard.edu/news/letters-in-response-to-is-fluoridated-drinking-water-safe/
+. Eight responses to this letter were written by highly qualified dental and public health experts. One letter of support was recieved while 7 were from those critical of the letter and highly supportive of CWF. 
+
+Fluoridosis, white spots on teeth, and fluoride-induced weakening of bones are reported to be harmful effects of fluoride. However, no peer-reviewed study has shown these effects at the recommended CWF concentration. These harmful effects are associated with much higher concentrations than CWF. 
+
+One cannot say why there remains quetsions about the safety and efficacy of CWF after 70 years of study and research showing positive effects. 
+
+
+### FUTURE WORK:
+Concerns of privacy prevented access to data at the level of each water district which would be more conclusive. The privacy concerns while appreciated seem unwarranted in this case as it would not be possible to identify individuals from such data. Hopefully, in the future such data will be released allowing a more precise analysis and statement to be made. 
+
+## References: 
+    Dean HT. On the epidemiology of fluorine and dental caries. In: Gies WJ, ed. Fluorine in Dental Public Health. New York, NY: New York Institute of Clinical Oral Pathology., 1945:19–30.
+    Rošin-Grget K, Peroš K, Sutej I, Bašić K. Acta Med Acad. 2013 Nov;42(2):179-88. doi: 10.5644/ama2006-124.85. The cariostatic mechanisms of fluoride.
+    Kumar et. al., Public Health Rep. 2010 Sep-Oct; 125(5): 647–654.
+    Griffin SO, Jones K, Tomar SL. An economic evaluation of community water fluoridation. J Public Health Dent 2001;61:78-86.
+    O’Connell JM, Brunson D, Anselmo T, Sullivan PW. Costs and savings associated with community water fluoridation programs in Colorado. Prev Chronic Dis 2005;2 Spec No:A06
